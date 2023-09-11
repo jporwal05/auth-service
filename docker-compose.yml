@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  auth-service:
+    build:
+      context: . # Use the current directory as the build context
+      dockerfile: Dockerfile # Path to your Dockerfile
+    ports:
+      - "8080:8080" # Map host port 8080 to container port 8080
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://admin:admin@postgres/auth_db # Replace with your PostgreSQL connection details
+    command: [ "./target/release/auth-service" ] # Command to run your Rust application
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin # Replace with your PostgreSQL username
+      POSTGRES_PASSWORD: admin # Replace with your PostgreSQL password
+      POSTGRES_DB: auth_db # Replace with your PostgreSQL database name
+    ports:
+      - "5432:5432" # Map host port 5432 to container port 5432

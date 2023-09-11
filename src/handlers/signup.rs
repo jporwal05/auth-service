@@ -1,4 +1,5 @@
 use actix_web::{web, Result};
+use auth_service::{establish_connection, CreateUser, UserService};
 use serde::Deserialize;
 
 pub const SIGN_UP_URL: &str = "/auth/signup";
@@ -7,6 +8,8 @@ pub struct SignUp {}
 
 impl SignUp {
     pub async fn sign_up(user: web::Json<User>) -> Result<String> {
+        let connection = &mut establish_connection();
+        let user = UserService::create_user(connection, user.username.as_str());
         Ok(format!("{} singed up successfully!", user.username))
     }
 }
@@ -23,7 +26,7 @@ mod tests {
     use serde_json::json;
 
     #[actix_web::test]
-    async fn test_index_post() {
+    async fn test_signup() {
         let payload = json!({"username": "some_user"});
 
         let app =
