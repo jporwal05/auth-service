@@ -1,6 +1,6 @@
 use actix_web::{web, App, HttpServer};
-use auth_service::establish_connection;
-use auth_service::run_migration;
+use auth_service::db::establish_connection;
+use auth_service::db::run_migration;
 use handlers::signup::SignUp;
 use handlers::signup::SIGN_UP_URL;
 mod handlers;

@@ -1,5 +1,5 @@
 use actix_web::{web, Result};
-use auth_service::{establish_connection, CreateUser, UserService};
+use auth_service::{db::establish_connection, CreateUser, UserService};
 use serde::Deserialize;
 
 pub const SIGN_UP_URL: &str = "/auth/signup";
@@ -22,8 +22,9 @@ pub struct User {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::run_migration;
     use actix_web::{test, web, App};
-    use auth_service::run_migration;
+    use auth_service::db::establish_connection;
     use serde_json::json;
 
     #[actix_web::test]
