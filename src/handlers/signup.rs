@@ -23,10 +23,13 @@ pub struct User {
 mod tests {
     use super::*;
     use actix_web::{test, web, App};
+    use auth_service::run_migration;
     use serde_json::json;
 
     #[actix_web::test]
     async fn test_signup() {
+        let connection = &mut establish_connection();
+        run_migration(connection);
         let payload = json!({"username": "some_user"});
 
         let app =

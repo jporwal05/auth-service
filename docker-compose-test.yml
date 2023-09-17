@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin # Replace with your PostgreSQL username
+      POSTGRES_PASSWORD: admin # Replace with your PostgreSQL password
+      POSTGRES_DB: auth_db # Replace with your PostgreSQL database name
+    ports:
+      - "5432:5432" # Map host port 5432 to container port 5432
