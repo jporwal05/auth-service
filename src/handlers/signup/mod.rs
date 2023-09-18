@@ -1,5 +1,8 @@
 use actix_web::{web, Result};
-use auth_service::{db::PostgresPool, CreateUser, UserService};
+use auth_service::{
+    db::PostgresPool,
+    services::{CreateUser, UserService},
+};
 use serde::Deserialize;
 
 pub const SIGN_UP_URL: &str = "/auth/signup";
