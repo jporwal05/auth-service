@@ -2,6 +2,7 @@ use diesel::{r2d2::ConnectionManager, PgConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenvy::dotenv;
 use r2d2::Pool;
+use slog::{info, Logger};
 use std::env;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
@@ -18,6 +19,7 @@ pub fn get_connection_pool() -> PostgresPool {
         .unwrap()
 }
 
-pub fn run_migration(connection: &mut PgConnection) {
+pub fn run_migration(connection: &mut PgConnection, root_logger: Logger) {
+    info!(root_logger, "running migrations");
     connection.run_pending_migrations(MIGRATIONS).unwrap();
 }

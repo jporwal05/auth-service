@@ -28,7 +28,7 @@ pub struct User {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::run_migration;
+    use crate::{log::init_logger, run_migration};
     use actix_web::{
         test,
         web::{self, Data},
@@ -39,14 +39,16 @@ mod tests {
 
     #[actix_web::test]
     async fn test_signup() {
+        let root_logger = init_logger();
         let pool = get_connection_pool();
         let connection = &mut pool.get().unwrap();
-        run_migration(connection);
+        run_migration(connection, root_logger.clone());
         let payload = json!({"username": "some_user"});
 
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(pool.clone()))
+                .app_data(Data::new(root_logger.clone()))
                 .route(SIGN_UP_URL, web::post().to(SignUp::sign_up)),
         )
         .await;
