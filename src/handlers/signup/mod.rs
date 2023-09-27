@@ -4,6 +4,7 @@ use auth_service::{
     services::{CreateUser, UserService},
 };
 use serde::Deserialize;
+use slog::{info, Logger};
 
 pub const SIGN_UP_URL: &str = "/auth/signup";
 
@@ -13,10 +14,13 @@ impl SignUp {
     pub async fn sign_up(
         user: web::Json<User>,
         connection_pool: web::Data<PostgresPool>,
+        root_logger: web::Data<Logger>,
     ) -> Result<String> {
+        info!(root_logger, "signing up user"; "username" => user.username.as_str());
         let connection = &mut connection_pool.get().unwrap();
         let user = UserService::create_user(connection, user.username.as_str());
-        Ok(format!("{} singed up successfully!", user.username))
+        info!(root_logger, "sign up successful for user"; "username" => user.username.as_str());
+        Ok(format!("{} sign up successful for user", user.username))
     }
 }
 
