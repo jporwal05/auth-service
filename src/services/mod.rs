@@ -11,6 +11,7 @@ pub trait CreateUser {
     fn create_user(&self, conn: &mut PgConnection, username: &str) -> User;
 }
 
+#[derive(Clone)]
 pub struct UserService {
     logger: Logger,
 }

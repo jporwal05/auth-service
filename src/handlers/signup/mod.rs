@@ -15,10 +15,10 @@ impl SignUp {
         user: web::Json<User>,
         connection_pool: web::Data<PostgresPool>,
         root_logger: web::Data<Logger>,
+        user_service: web::Data<UserService>,
     ) -> Result<String> {
         info!(root_logger, "signing up user"; "username" => user.username.as_str());
         let connection = &mut connection_pool.get().unwrap();
-        let user_service = UserService::new(root_logger.to_erased());
         let user = user_service.create_user(connection, user.username.as_str());
         info!(root_logger, "sign up successful for user"; "username" => user.username.as_str());
         Ok(format!("{} sign up successful for user", user.username))
@@ -48,12 +48,14 @@ mod tests {
         let pool = get_connection_pool();
         let connection = &mut pool.get().unwrap();
         run_migration(connection, root_logger.clone());
+        let user_service = UserService::new(root_logger.clone());
         let payload = json!({"username": "some_user"});
 
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(pool.clone()))
                 .app_data(Data::new(root_logger.clone()))
+                .app_data(Data::new(user_service.clone()))
                 .route(SIGN_UP_URL, web::post().to(SignUp::sign_up)),
         )
         .await;
