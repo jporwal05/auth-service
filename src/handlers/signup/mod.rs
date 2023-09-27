@@ -18,7 +18,8 @@ impl SignUp {
     ) -> Result<String> {
         info!(root_logger, "signing up user"; "username" => user.username.as_str());
         let connection = &mut connection_pool.get().unwrap();
-        let user = UserService::create_user(connection, user.username.as_str());
+        let user_service = UserService::new(root_logger.to_erased());
+        let user = user_service.create_user(connection, user.username.as_str());
         info!(root_logger, "sign up successful for user"; "username" => user.username.as_str());
         Ok(format!("{} sign up successful for user", user.username))
     }
