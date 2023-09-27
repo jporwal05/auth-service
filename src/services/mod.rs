@@ -1,27 +1,33 @@
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use models::User;
 use slog::{info, Logger};
 
-use crate::models::{self, NewUser};
+use crate::{
+    db::PostgresPool,
+    models::{self, NewUser},
+};
 
 pub trait CreateUser {
-    fn new(logger: Logger) -> Self;
+    fn new(logger: Logger, connection_pool: PostgresPool) -> Self;
 
-    fn create_user(&self, conn: &mut PgConnection, username: &str) -> User;
+    fn create_user(&self, username: &str) -> User;
 }
 
 #[derive(Clone)]
 pub struct UserService {
     logger: Logger,
+    connection_pool: PostgresPool,
 }
 
 impl CreateUser for UserService {
-    fn new(logger: Logger) -> Self {
-        UserService { logger: logger }
+    fn new(logger: Logger, connection_pool: PostgresPool) -> Self {
+        UserService {
+            logger: logger,
+            connection_pool: connection_pool,
+        }
     }
 
-    fn create_user(&self, conn: &mut PgConnection, username: &str) -> User {
+    fn create_user(&self, username: &str) -> User {
         use crate::schema::users;
         info!(self.logger, "creating user"; "username" => username);
 
@@ -30,7 +36,7 @@ impl CreateUser for UserService {
         diesel::insert_into(users::table)
             .values(&new_user)
             .returning(User::as_returning())
-            .get_result(conn)
+            .get_result(&mut self.connection_pool.get().unwrap())
             .expect("Error saving new user")
     }
 }

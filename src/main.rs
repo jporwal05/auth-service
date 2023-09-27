@@ -15,10 +15,9 @@ async fn main() -> std::io::Result<()> {
     let pool = get_connection_pool();
     let connection = &mut pool.get().unwrap();
     run_migration(connection, root_logger.clone());
-    let user_service = UserService::new(root_logger.clone());
+    let user_service = UserService::new(root_logger.clone(), pool.clone());
     HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(pool.clone()))
             .app_data(Data::new(root_logger.clone()))
             .app_data(Data::new(user_service.clone()))
             .route(SIGN_UP_URL, web::post().to(SignUp::sign_up))
