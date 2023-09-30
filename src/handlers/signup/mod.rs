@@ -1,6 +1,8 @@
 use actix_web::{web, Result};
-use auth_service::services::{CreateUser, UserService};
-use serde::Deserialize;
+use auth_service::{
+    models::{CreateUserDto, CreateUserRequest},
+    services::{CreateUser, UserService},
+};
 use slog::{info, Logger};
 
 pub const SIGN_UP_URL: &str = "/auth/signup";
@@ -9,20 +11,18 @@ pub struct SignUp {}
 
 impl SignUp {
     pub async fn sign_up(
-        user: web::Json<User>,
+        create_user_request: web::Json<CreateUserRequest>,
         root_logger: web::Data<Logger>,
         user_service: web::Data<UserService>,
     ) -> Result<String> {
-        info!(root_logger, "signing up user"; "username" => user.username.as_str());
-        let user = user_service.create_user(user.username.as_str());
-        info!(root_logger, "sign up successful for user"; "username" => user.username.as_str());
-        Ok(format!("{} sign up successful for user", user.username))
+        info!(root_logger, "signing up user"; "username" => create_user_request.username.as_str());
+        let create_user_dto = user_service.create_user(CreateUserDto::from(create_user_request));
+        info!(root_logger, "sign up successful for user"; "username" => create_user_dto.username.as_str());
+        Ok(format!(
+            "{} sign up successful for user",
+            create_user_dto.username
+        ))
     }
-}
-
-#[derive(Deserialize)]
-pub struct User {
-    username: String,
 }
 
 #[cfg(test)]
@@ -44,7 +44,7 @@ mod tests {
         let connection = &mut pool.get().unwrap();
         run_migration(connection, root_logger.clone());
         let user_service = UserService::new(root_logger.clone(), pool.clone());
-        let payload = json!({"username": "some_user"});
+        let payload = json!({"username": "some_user", "password": "plain_text_password"});
 
         let app = test::init_service(
             App::new()
