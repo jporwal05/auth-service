@@ -1,6 +1,6 @@
-use actix_web::{web, Result};
+use actix_web::{web, Responder};
 use auth_service::{
-    models::{CreateUserDto, CreateUserRequest},
+    models::{CreateUserDto, CreateUserRequest, CreateUserResponse},
     services::{CreateUser, UserService},
 };
 use slog::{info, Logger};
@@ -14,14 +14,13 @@ impl SignUp {
         create_user_request: web::Json<CreateUserRequest>,
         root_logger: web::Data<Logger>,
         user_service: web::Data<UserService>,
-    ) -> Result<String> {
+    ) -> impl Responder {
         info!(root_logger, "signing up user"; "username" => create_user_request.username.as_str());
         let create_user_dto = user_service.create_user(CreateUserDto::from(create_user_request));
         info!(root_logger, "sign up successful for user"; "username" => create_user_dto.username.as_str());
-        Ok(format!(
-            "{} sign up successful for user",
-            create_user_dto.username
-        ))
+        let mut create_user_response = CreateUserResponse::from(create_user_dto);
+        create_user_response.message = Some("sign up successful".to_owned());
+        create_user_response
     }
 }
 
@@ -59,5 +58,16 @@ mod tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
+
+        let body_bytes = test::read_body(resp).await;
+        let body_str = String::from_utf8(body_bytes.to_vec())
+            .expect("Failed to convert response body to string");
+
+        let create_user_response: CreateUserResponse = serde_json::from_str(&body_str).unwrap();
+
+        assert_eq!("some_user", create_user_response.username);
+        assert!(create_user_response
+            .message
+            .is_some_and(|message| message == "sign up successful"));
     }
 }

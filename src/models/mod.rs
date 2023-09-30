@@ -1,4 +1,6 @@
-use actix_web::web;
+use actix_web::{
+    body::BoxBody, http::header::ContentType, web, HttpRequest, HttpResponse, Responder,
+};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -32,10 +34,23 @@ pub struct CreateUserRequest {
     pub password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CreateUserResponse {
     pub username: String,
     pub message: Option<String>,
+}
+
+impl Responder for CreateUserResponse {
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        let body = serde_json::to_string(&self).unwrap();
+
+        // Create response and set content type
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .body(body)
+    }
 }
 
 impl From<CreateUserDto> for CreateUserResponse {
