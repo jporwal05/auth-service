@@ -1,3 +1,5 @@
+use std::fmt;
+
 use actix_web::{
     body::BoxBody, http::header::ContentType, web, HttpRequest, HttpResponse, Responder,
 };
@@ -34,34 +36,6 @@ pub struct CreateUserRequest {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct CreateUserResponse {
-    pub username: String,
-    pub message: Option<String>,
-}
-
-impl Responder for CreateUserResponse {
-    type Body = BoxBody;
-
-    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
-        let body = serde_json::to_string(&self).unwrap();
-
-        // Create response and set content type
-        HttpResponse::Ok()
-            .content_type(ContentType::json())
-            .body(body)
-    }
-}
-
-impl From<CreateUserDto> for CreateUserResponse {
-    fn from(create_user_dto: CreateUserDto) -> Self {
-        CreateUserResponse {
-            username: create_user_dto.username,
-            message: None,
-        }
-    }
-}
-
 impl From<web::Json<CreateUserRequest>> for CreateUserDto {
     fn from(create_user_request: actix_web::web::Json<CreateUserRequest>) -> Self {
         CreateUserDto {
@@ -71,11 +45,40 @@ impl From<web::Json<CreateUserRequest>> for CreateUserDto {
     }
 }
 
-impl From<User> for CreateUserDto {
-    fn from(user: User) -> Self {
-        CreateUserDto {
-            username: user.username,
-            password: user.password,
+#[derive(Serialize, Deserialize)]
+pub struct UserDto {
+    pub id: i32,
+    pub username: String,
+    pub password: String,
+}
+
+impl From<&User> for UserDto {
+    fn from(user: &User) -> Self {
+        UserDto {
+            id: user.id,
+            username: user.username.clone(),
+            password: user.password.clone(),
         }
+    }
+}
+
+impl Responder for UserDto {
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        let body = serde_json::to_string(&self).unwrap();
+
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .body(body)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthServiceError;
+
+impl fmt::Display for AuthServiceError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Some error here")
     }
 }

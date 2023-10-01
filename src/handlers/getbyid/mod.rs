@@ -1,37 +1,31 @@
-use actix_web::{web, HttpResponse, Responder};
-use auth_service::{
-    models::{CreateUserDto, CreateUserRequest},
-    services::user::{CreateUser, UserService},
-};
-use slog::{error, info, Logger};
+use actix_web::{web, Responder};
+use auth_service::services::user::{GetUser, UserService};
+use slog::{info, Logger};
 
-pub const SIGN_UP_URL: &str = "/auth/users";
+pub const GET_BY_ID_URL: &str = "/auth/users";
 
-pub struct SignUp {}
+pub struct GetById {}
 
-impl SignUp {
-    pub async fn sign_up(
-        create_user_request: web::Json<CreateUserRequest>,
+impl GetById {
+    pub async fn get_by_id(
+        path: web::Path<i32>,
         root_logger: web::Data<Logger>,
         user_service: web::Data<UserService>,
     ) -> impl Responder {
-        let username = create_user_request.username.clone();
-        info!(root_logger, "signing up user"; "username" => &username);
-        let result = user_service.create_user(CreateUserDto::from(create_user_request));
-        if result.is_ok() {
-            info!(root_logger, "sign up successful for user"; "username" => &username);
-            HttpResponse::Ok()
-        } else {
-            error!(root_logger, "sign up failed for user: {}", result.unwrap_err(); "username" => &username);
-            HttpResponse::InternalServerError()
-        }
+        let id = path.into_inner();
+        info!(root_logger, "getting user"; "id" => id);
+        user_service.get_user(id).unwrap()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{log::init_logger, run_migration};
+    use crate::{
+        handlers::signup::{SignUp, SIGN_UP_URL},
+        log::init_logger,
+        run_migration,
+    };
     use actix_web::{
         test,
         web::{self, Data},
@@ -41,7 +35,7 @@ mod tests {
     use serde_json::json;
 
     #[actix_web::test]
-    async fn test_sign_up() {
+    async fn test_get_by_id() {
         let root_logger = init_logger();
         let pool = get_connection_pool();
         let connection = &mut pool.get().unwrap();
@@ -53,12 +47,20 @@ mod tests {
             App::new()
                 .app_data(Data::new(root_logger.clone()))
                 .app_data(Data::new(user_service.clone()))
-                .route(SIGN_UP_URL, web::post().to(SignUp::sign_up)),
+                .route(SIGN_UP_URL, web::post().to(SignUp::sign_up))
+                .route(
+                    format!("{}/{{id}}", GET_BY_ID_URL).as_str(),
+                    web::get().to(GetById::get_by_id),
+                ),
         )
         .await;
         let req = test::TestRequest::post()
             .uri(SIGN_UP_URL)
             .set_json(&payload)
+            .to_request();
+        test::call_service(&app, req).await;
+        let req = test::TestRequest::get()
+            .uri(format!("{}/1", GET_BY_ID_URL).as_str())
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
