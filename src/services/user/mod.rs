@@ -5,11 +5,12 @@ use slog::{info, Logger};
 
 use crate::{
     db::PostgresPool,
-    models::{self, AuthServiceError, CreateUserDto, NewUser, UserDto},
-    schema::users::{self, id, username},
+    models::{self, AuthServiceError, CreateUserDto, NewUser, UpdateUserDto, UserDto},
+    schema::users::{self, id, password, username},
 };
 
 use crate::services::user::users::dsl::users as users_select;
+use crate::services::user::users::dsl::users as users_update;
 
 pub trait CreateUser {
     fn new(logger: Logger, connection_pool: PostgresPool) -> Self;
@@ -21,6 +22,12 @@ pub trait GetUser {
     fn new(logger: Logger, connection_pool: PostgresPool) -> Self;
 
     fn get_user(&self, id: i32) -> Result<UserDto, AuthServiceError>;
+}
+
+pub trait UpdateUser {
+    fn new(logger: Logger, connection_pool: PostgresPool) -> Self;
+
+    fn update_user(&self, user_dto: UpdateUserDto) -> Result<bool, AuthServiceError>;
 }
 
 #[derive(Clone)]
@@ -87,5 +94,35 @@ impl GetUser for UserService {
         } else {
             Err(AuthServiceError)
         }
+    }
+}
+
+impl UpdateUser for UserService {
+    fn new(logger: Logger, connection_pool: PostgresPool) -> Self {
+        UserService {
+            logger: logger,
+            connection_pool: connection_pool,
+        }
+    }
+
+    fn update_user(&self, user_dto: UpdateUserDto) -> Result<bool, AuthServiceError> {
+        let connection = &mut self.connection_pool.get().unwrap();
+
+        users_select
+            .filter(id.eq(&user_dto.id))
+            .select(User::as_select())
+            .load(connection)
+            .expect("Could not find user");
+
+        diesel::update(users_update.filter(id.eq(&user_dto.id)))
+            .set((
+                username.eq(&user_dto.username.clone()),
+                password.eq(&user_dto.password.clone()),
+            ))
+            .returning(User::as_returning())
+            .get_result(connection)
+            .expect("Could not update user");
+
+        Ok(true)
     }
 }

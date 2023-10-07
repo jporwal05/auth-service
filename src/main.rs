@@ -6,6 +6,7 @@ use auth_service::services::user::{CreateUser, UserService};
 use handlers::getbyid::{GetById, GET_BY_ID_URL};
 use handlers::signup::SignUp;
 use handlers::signup::SIGN_UP_URL;
+use handlers::update::{Update, UPDATE_URL};
 use log::init_logger;
 mod handlers;
 mod log;
@@ -26,6 +27,7 @@ async fn main() -> std::io::Result<()> {
                 format!("{}/{{id}}", GET_BY_ID_URL).as_str(),
                 web::get().to(GetById::get_by_id),
             )
+            .route(UPDATE_URL, web::put().to(Update::update))
     })
     .bind(("0.0.0.0", 8080))?
     .run()

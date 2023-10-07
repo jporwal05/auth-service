@@ -45,6 +45,30 @@ impl From<web::Json<CreateUserRequest>> for CreateUserDto {
     }
 }
 
+#[derive(Deserialize)]
+pub struct UpdateUserDto {
+    pub id: i32,
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateUserRequest {
+    pub id: i32,
+    pub username: String,
+    pub password: String,
+}
+
+impl From<web::Json<UpdateUserRequest>> for UpdateUserDto {
+    fn from(update_user_request: actix_web::web::Json<UpdateUserRequest>) -> Self {
+        UpdateUserDto {
+            id: update_user_request.id,
+            username: update_user_request.username.clone(),
+            password: update_user_request.password.clone(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct UserDto {
     pub id: i32,
