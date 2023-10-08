@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse, HttpServer, Responder};
+use actix_web::{web, HttpResponse, Responder};
 use auth_service::{
     models::{UpdateUserDto, UpdateUserRequest},
     services::user::{UpdateUser, UserService},

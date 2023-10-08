@@ -2,7 +2,7 @@ use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
 use auth_service::db::get_connection_pool;
 use auth_service::db::run_migration;
-use auth_service::services::user::{CreateUser, UserService};
+use auth_service::services::user::{SignUpUser, UserService};
 use handlers::getbyid::{GetById, GET_BY_ID_URL};
 use handlers::signup::SignUp;
 use handlers::signup::SIGN_UP_URL;

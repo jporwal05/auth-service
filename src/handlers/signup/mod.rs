@@ -1,7 +1,7 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, Responder};
 use auth_service::{
-    models::{CreateUserDto, CreateUserRequest},
-    services::user::{CreateUser, UserService},
+    models::{SignUpUserDto, SignUpUserRequest, SignUpUserResponse},
+    services::user::{SignUpUser, UserService},
 };
 use slog::{error, info, Logger};
 
@@ -11,19 +11,19 @@ pub struct SignUp {}
 
 impl SignUp {
     pub async fn sign_up(
-        create_user_request: web::Json<CreateUserRequest>,
+        sign_up_user_request: web::Json<SignUpUserRequest>,
         root_logger: web::Data<Logger>,
         user_service: web::Data<UserService>,
     ) -> impl Responder {
-        let username = create_user_request.username.clone();
+        let username = sign_up_user_request.username.clone();
         info!(root_logger, "signing up user"; "username" => &username);
-        let result = user_service.create_user(CreateUserDto::from(create_user_request));
+        let result = user_service.sign_up_user(SignUpUserDto::from(sign_up_user_request));
         if result.is_ok() {
             info!(root_logger, "sign up successful for user"; "username" => &username);
-            HttpResponse::Ok()
+            SignUpUserResponse::new(result.ok().unwrap(), "success".to_owned())
         } else {
             error!(root_logger, "sign up failed for user: {}", result.unwrap_err(); "username" => &username);
-            HttpResponse::InternalServerError()
+            SignUpUserResponse::new(-1, "failed".to_owned())
         }
     }
 }
@@ -37,7 +37,7 @@ mod tests {
         web::{self, Data},
         App,
     };
-    use auth_service::db::get_connection_pool;
+    use auth_service::{db::get_connection_pool, models::SignUpUserResponse};
     use serde_json::json;
 
     #[actix_web::test]
@@ -62,5 +62,12 @@ mod tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
+
+        let body_bytes = test::read_body(resp).await;
+        let body_str = String::from_utf8(body_bytes.to_vec())
+            .expect("Failed to convert response body to string");
+        let sign_up_user_response: SignUpUserResponse = serde_json::from_str(&body_str).unwrap();
+
+        assert_eq!(1, sign_up_user_response.id);
     }
 }

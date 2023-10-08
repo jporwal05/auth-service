@@ -25,23 +25,50 @@ pub struct NewUser<'a> {
 }
 
 #[derive(Deserialize)]
-pub struct CreateUserDto {
+pub struct SignUpUserDto {
     pub username: String,
     pub password: String,
 }
 
 #[derive(Deserialize)]
-pub struct CreateUserRequest {
+pub struct SignUpUserRequest {
     pub username: String,
     pub password: String,
 }
 
-impl From<web::Json<CreateUserRequest>> for CreateUserDto {
-    fn from(create_user_request: actix_web::web::Json<CreateUserRequest>) -> Self {
-        CreateUserDto {
-            username: create_user_request.username.clone(),
-            password: create_user_request.password.clone(),
+impl From<web::Json<SignUpUserRequest>> for SignUpUserDto {
+    fn from(sign_up_user_request: actix_web::web::Json<SignUpUserRequest>) -> Self {
+        SignUpUserDto {
+            username: sign_up_user_request.username.clone(),
+            password: sign_up_user_request.password.clone(),
         }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SignUpUserResponse {
+    pub id: i32,
+    pub status: String,
+}
+
+impl SignUpUserResponse {
+    pub fn new(id: i32, status: String) -> Self {
+        SignUpUserResponse {
+            id: id,
+            status: status,
+        }
+    }
+}
+
+impl Responder for SignUpUserResponse {
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        let body = serde_json::to_string(&self).unwrap();
+
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .body(body)
     }
 }
 

@@ -5,17 +5,17 @@ use slog::{info, Logger};
 
 use crate::{
     db::PostgresPool,
-    models::{self, AuthServiceError, CreateUserDto, NewUser, UpdateUserDto, UserDto},
+    models::{self, AuthServiceError, NewUser, SignUpUserDto, UpdateUserDto, UserDto},
     schema::users::{self, id, password, username},
 };
 
 use crate::services::user::users::dsl::users as users_select;
 use crate::services::user::users::dsl::users as users_update;
 
-pub trait CreateUser {
+pub trait SignUpUser {
     fn new(logger: Logger, connection_pool: PostgresPool) -> Self;
 
-    fn create_user(&self, user_dto: CreateUserDto) -> Result<bool, AuthServiceError>;
+    fn sign_up_user(&self, user_dto: SignUpUserDto) -> Result<i32, AuthServiceError>;
 }
 
 pub trait GetUser {
@@ -36,7 +36,7 @@ pub struct UserService {
     connection_pool: PostgresPool,
 }
 
-impl CreateUser for UserService {
+impl SignUpUser for UserService {
     fn new(logger: Logger, connection_pool: PostgresPool) -> Self {
         UserService {
             logger: logger,
@@ -44,7 +44,7 @@ impl CreateUser for UserService {
         }
     }
 
-    fn create_user(&self, user_dto: CreateUserDto) -> Result<bool, AuthServiceError> {
+    fn sign_up_user(&self, user_dto: SignUpUserDto) -> Result<i32, AuthServiceError> {
         info!(self.logger, "creating user"; "username" => &user_dto.username);
 
         let new_user = NewUser {
@@ -61,14 +61,18 @@ impl CreateUser for UserService {
             .expect("Could not find user");
 
         if users.len() == 0 {
-            diesel::insert_into(users::table)
+            let user = diesel::insert_into(users::table)
                 .values(&new_user)
                 .returning(User::as_returning())
                 .get_result(connection)
                 .expect("Error creating new user");
+            return Ok(user.id);
+        } else if users.len() == 1 {
+            let user: &User = &users[0];
+            return Ok(user.id);
         }
 
-        Ok(true)
+        Err(AuthServiceError)
     }
 }
 
